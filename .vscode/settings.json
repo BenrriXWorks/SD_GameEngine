@@ -44,6 +44,17 @@
         "queue": "cpp",
         "stack": "cpp",
         "expected": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "numbers": "cpp",
+        "ctime": "cpp",
+        "list": "cpp",
+        "numeric": "cpp",
+        "ratio": "cpp",
+        "streambuf": "cpp",
+        "text_encoding": "cpp",
+        "variant": "cpp",
+        "__bit_reference": "cpp",
+        "__split_buffer": "cpp",
+        "execution": "cpp"
     }
 }

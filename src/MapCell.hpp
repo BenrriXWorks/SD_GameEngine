@@ -4,11 +4,12 @@
 #include <optional>
 #include <cstdint>
 #include <string>
+#include <memory>
 #include "StrColors.hpp"
 
-class MapCell;
+// Forward declaration
+class Effect;
 
-using Effect = std::function<void(MapCell&)>;
 using Card = uint8_t;
 
 class MapCell {
@@ -17,15 +18,17 @@ class MapCell {
         enum class FloorType : uint8_t {
             NONE,
             WALKABLE
-        };
-
+        };        
         FloorType floor;
         uint8_t x, y;
-        std::list<Effect> passiveEffects;
-        std::optional<Card> card;
-
-        MapCell() = default;
-        MapCell(FloorType floorType, uint8_t x, uint8_t y) : floor(floorType), x(x), y(y), card(std::nullopt) {}
+        std::list<std::shared_ptr<Effect>> passiveEffects;
+        std::optional<Card> card;MapCell() = default;
+        MapCell(FloorType floorType, uint8_t x, uint8_t y) : 
+            floor(floorType), 
+            x(x), 
+            y(y), 
+            passiveEffects(), // Lista vacía
+            card(std::nullopt) {}
 
         operator std::string() const {
             using namespace StrColors;

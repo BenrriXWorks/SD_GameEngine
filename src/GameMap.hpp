@@ -1,10 +1,14 @@
 #pragma once
-#include "MapCell.hpp"
 #include <array>
 #include <ranges>
 #include <functional>
 #include <optional>
 #include <numeric>
+#include <string>
+
+// Forward declaration
+class MapCell;
+#include "StrColors.hpp" // Necesario para el operador string()
 
 class GameMap {
 
@@ -25,17 +29,19 @@ class GameMap {
         };
 
         static const constexpr uint8_t 
-            MAP_HEIGHT = 9,
+            MAP_HEIGHT = 7,
             MAP_WIDTH = 5;
 
     private:
         std::array<std::array<MapCell, MAP_WIDTH>, MAP_HEIGHT> mapData;
 
-        static inline const auto& MAP_TEMPLATE = [](){
+        static inline const auto& MAP_DEFAULT_TEMPLATE = [](){
             std::array<std::array<MapCell, MAP_WIDTH>, MAP_HEIGHT> mapDataTemplate;
 
             static constexpr auto isWalkable = [](uint8_t x, uint8_t y) -> bool { 
-                return (abs(x - MAP_WIDTH / 2) + abs(y - MAP_HEIGHT / 2)) <= 4;
+                return (y >= 3 && y < MAP_HEIGHT - 1) || 
+                    x == MAP_WIDTH / 2 ||
+                    (y == 2 && x >= 1 && x < MAP_WIDTH - 1) ;
             };
 
             using namespace std::ranges;
@@ -51,7 +57,7 @@ class GameMap {
 
     public:
 
-        GameMap() : mapData(MAP_TEMPLATE) {}
+        GameMap() : mapData(MAP_DEFAULT_TEMPLATE) {}
         
         MapCell* getNeighbor(Adjacency direction, const MapCell* cell) {
             if (!cell) return nullptr;

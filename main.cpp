@@ -3,68 +3,40 @@
 #include <functional>
 #include <utility>
 #include <string>
+#include "src/Effect.hpp"
 #include "src/MapCell.hpp"
 #include "src/GameMap.hpp"
-
+#include "src/EffectStack.hpp"
+#include "src/EffectImpl/PrintEffect.hpp"
 
 using namespace std;
 
 
 int main() {
+    EffectStack stack;
+    GameMap gameMap = GameMap();
+    MapCell* sourceCell = gameMap.at(2, 0);
+    list<MapCell*> targets = { sourceCell };    
+    uint8_t card1 = 42;
+    uint8_t card2 = 99;    
 
-    srand(static_cast<unsigned int>(time(nullptr))); // Inicializar generador de números aleatorios
+    // Agrega efectos de ejemplo
+    stack.addEffect(TriggerAction::ON_PLAY, 1001, make_shared<PrintEffect>(card1, "Summon Buff"));
+    stack.addEffect(TriggerAction::ON_PLAY, 1002, make_shared<PrintEffect>(card2, "Draw Shield"));
 
-    // Inicializar mapa
-    GameMap gameMap;
-    uint8_t x = rand() % GameMap::MAP_WIDTH, y = rand() % GameMap::MAP_HEIGHT;
+    println("Initial Effect Stack:\n{}\n", string(stack));
 
-    // Obtener una celda cualquiera
-    auto cell = gameMap.at(x, y);
-    if (cell == nullptr || gameMap.at(x,y)->floor == MapCell::FloorType::NONE) 
-        return (println("Player would be put out of bounds (x:{}, y:{})", x, y), 1);
-    println("Cell at (x:{}, y:{}): {}", cell->x, cell->y, (string)(*cell));
-    
-    // Asignar una carta stub (un numero) de ejemplo a la celda inicial
-    if (!cell->card.has_value()) cell->card = 1; 
-    
+    println("Triggering ON_PLAY effects:");
+    stack.triggerEffects(TriggerAction::ON_PLAY, gameMap, sourceCell, targets);
 
-    // Agregar efectos pasivos a la celdas random.
-    for (int i = 0; i < 10; ++i) {
-        auto randCell = gameMap.at(rand() % GameMap::MAP_WIDTH, rand() % GameMap::MAP_HEIGHT);
-        if (!randCell) {
-            println("Random cell is out of bounds");
-            continue;
-        } else if (randCell->floor == MapCell::FloorType::NONE) {
-            println("Random cell at (x:{}, y:{}) is not walkable therefore cant have effect", randCell->x, randCell->y);
-            continue;
-        }
-        randCell->passiveEffects.push_back([](MapCell& c) { c.card = 2; }); // Asignar un efecto de ejemplo
-        randCell->passiveEffects.push_back([](MapCell& c) { c.floor = MapCell::FloorType::WALKABLE; }); // Cambiar el piso
-        println("Added effects to random cell at (x:{}, y:{}): {}", randCell->x, randCell->y, string(*randCell));
-    }
+    println("\nAfter triggering:\n{}\n", string(stack));
 
-    // Imprimir el mapa
-    println("========= MAP =========");
-    println("{}", string(gameMap));
-    println("=======================");
+    // Reagrega uno para probar remove
+    stack.addEffect(TriggerAction::ON_ATTACK, 1001, make_shared<PrintEffect>(card1, "Attack Boost"));
 
-
-    
-    // Imprimir vecinos de la celda
-    println("Neighbors of cell at (x:{}, y:{}):", cell->x, cell->y);
-    for (auto direction : std::array{
-        GameMap::Adjacency::UP,
-        GameMap::Adjacency::TOP_RIGHT,
-        GameMap::Adjacency::BOTTOM_RIGHT,
-        GameMap::Adjacency::DOWN,
-        GameMap::Adjacency::BOTTOM_LEFT,
-        GameMap::Adjacency::TOP_LEFT
-    }) {
-        if (auto* neighbor = gameMap.getNeighbor(direction, cell)) 
-            println("Neighbor {}: {}", gameMap.getAdjacencyName(direction), string(*neighbor));
-        else
-            println("No neighbor {} (out of bounds)", static_cast<int>(direction));
-    }
+    println("Before removing effects from sourceID 1001:\n{}\n", string(stack));
+    stack.removeEffectsBySource(1001);
+    println("After removing effects from sourceID 1001:\n{}", string(stack));
 
     return 0;
 }
