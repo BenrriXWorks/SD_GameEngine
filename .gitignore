@@ -1,0 +1,24 @@
+# Compiled binaries
+test_card_loading
+test_card_loading.exe
+main
+main.exe
+prog.exe
+*.exe
+*.o
+*.obj
+
+# IDE and build files
+.vscode/settings.json
+build/
+dist/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db

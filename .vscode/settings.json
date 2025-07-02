@@ -55,6 +55,10 @@
         "variant": "cpp",
         "__bit_reference": "cpp",
         "__split_buffer": "cpp",
-        "execution": "cpp"
-    }
+        "execution": "cpp",
+        "cwctype": "cpp",
+        "random": "cpp",
+        "ostream": "cpp"
+    },
+    "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/clang++.exe"
 }
