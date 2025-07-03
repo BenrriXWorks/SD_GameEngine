@@ -37,6 +37,7 @@ public:
 
     // Setters
     void setOwner(PlayerId newOwner) { owner = newOwner; }
+    void setCost(uint8_t newCost) { cost = newCost; }
     void addEffect(EffectPtr effect) { effects.push_back(effect); }
     void removeEffect(EffectPtr effect) { effects.remove(effect); }
 

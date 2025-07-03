@@ -6,6 +6,7 @@
 #include <memory>
 #include "../utils/StrColors.hpp"
 #include "../utils/Types.hpp"
+#include "../cards/Card.hpp" // Incluir definición completa de Unit
 
 class MapCell {
 
@@ -28,7 +29,16 @@ class MapCell {
         operator std::string() const {
             using namespace StrColors;
             
-            if (card.has_value()) return RED + "⬣" + RESET;        // Carta: rojo
+            if (card.has_value()) {
+                auto cardPtr = card.value();
+                // Verificar si es una leyenda
+                if (auto unit = std::dynamic_pointer_cast<Unit>(cardPtr)) {
+                    if (unit->isLegend()) {
+                        return BLUE + "⬣" + RESET; // Leyenda: azul
+                    }
+                }
+                return RED + "⬣" + RESET;        // Carta normal: rojo
+            }
             if (floor == FloorType::SPAWN) return YELLOW + "⬣" + RESET; // Spawn: amarillo
             if (floor == FloorType::WALKABLE) return GREEN + "⬣" + RESET;// Caminable: verde
             

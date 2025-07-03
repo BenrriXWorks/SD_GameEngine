@@ -23,6 +23,7 @@ namespace StrColors {
     
     // Text styles
     static constexpr std::string BOLD = "\x1B[1m";
+    static constexpr std::string DIM = "\x1B[2m";
     
     static constexpr std::string RESET = "\x1B[0m";
 }

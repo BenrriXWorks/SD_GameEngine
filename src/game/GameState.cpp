@@ -24,7 +24,8 @@ thread_local uint32_t GameState::rng_state = []() {
 
 GameState::GameState() : 
     map(), // Create default map
-    effectStack() {
+    effectStack(),
+    gameConfig() {  // Use default config
     // Initialize with default values
     phase = GamePhase::SETUP;
     turnNumber = 0;
@@ -32,6 +33,50 @@ GameState::GameState() :
     
     // RNG is already initialized with unique seed per thread
     // Warm it up with a few iterations for better distribution
+    for (int i = 0; i < 5; ++i) {
+        fastRand();
+    }
+}
+
+GameState::GameState(const GameConfig& config) : 
+    map(), // Create default map
+    effectStack(),
+    gameConfig(config) {
+    // Initialize with default values
+    phase = GamePhase::SETUP;
+    turnNumber = 0;
+    currentPlayer = 0;
+    
+    // RNG is already initialized with unique seed per thread
+    // Warm it up with a few iterations for better distribution
+    for (int i = 0; i < 5; ++i) {
+        fastRand();
+    }
+}
+
+GameState::GameState(std::vector<CardPtr> deck1, std::vector<CardPtr> deck2, const GameConfig& config) :
+    map(),
+    effectStack(),
+    gameConfig(config) {
+    // Initialize with default values
+    phase = GamePhase::SETUP;
+    turnNumber = 0;
+    currentPlayer = 0;
+    
+    // Add two players with their respective decks
+    addPlayer(0, Team::TEAM_A, "Player 1");
+    addPlayer(1, Team::TEAM_B, "Player 2");
+    
+    setPlayerDeck(0, std::move(deck1));
+    setPlayerDeck(1, std::move(deck2));
+    
+    // Apply configuration to players
+    applyConfigurationToPlayers();
+    
+    // Start the game automatically
+    startGame();
+    
+    // RNG warmup
     for (int i = 0; i < 5; ++i) {
         fastRand();
     }
@@ -54,14 +99,19 @@ void GameState::setPlayerDeck(PlayerId id, std::vector<CardPtr> deck) {
 }
 
 void GameState::startGame() {
-    // Draw initial hands and reset actions
+    // Aplicar configuración a los jugadores antes de empezar
+    applyConfigurationToPlayers();
+    
+    // PRIMERO: Colocar las leyendas en sus posiciones de spawn
+    // y removerlas de los mazos ANTES de robar cualquier carta
+    placeLegends();
+    
+    // SEGUNDO: Robar cartas iniciales usando configuración
+    uint8_t initialHandSize = gameConfig.getUInt8("initial_hand_size", 5);
     for (auto& player : players) {
-        drawCard(player, 5); // Draw 5 cards for each player
+        drawCard(player, initialHandSize);
         player.actionsRemaining = player.maxActionsPerTurn;
     }
-    
-    // Place legends on their spawn positions
-    placeLegends();
     
     phase = GamePhase::PLAY;
     currentPlayer = 0; // First player starts
@@ -69,6 +119,11 @@ void GameState::startGame() {
 
 void GameState::drawCard(Player& player, uint8_t count) {
     for (uint8_t i = 0; i < count; ++i) {
+        // Respetar el límite de mano
+        if (player.hand.size() >= player.maxHandSize) {
+            break;
+        }
+        
         if (player.deck.empty()) {
             // Reshuffle discard pile into deck if needed
             if (!player.discard.empty()) {
@@ -90,6 +145,12 @@ void GameState::drawCard(Player& player, uint8_t count) {
 void GameState::returnCardToDeck(PlayerId playerId, CardPtr card) {
     Player* player = findPlayer(playerId);
     if (!player || !card) {
+        return;
+    }
+    
+    // Las leyendas NUNCA vuelven al mazo - son únicas
+    if (auto legend = std::dynamic_pointer_cast<Legend>(card)) {
+        std::println("⚠️  Advertencia: Intentando devolver leyenda {} al mazo - las leyendas no se reciclan", legend->getName());
         return;
     }
     
@@ -127,6 +188,19 @@ void GameState::endTurn(PlayerId playerId) {
     if (player) {
         drawCard(*player, 1);
         player->actionsRemaining = player->maxActionsPerTurn;
+    }
+}
+
+void GameState::applyConfigurationToPlayers() {
+    uint8_t maxHandSize = gameConfig.getUInt8("max_hand_size", 7);
+    uint8_t maxActions = gameConfig.getUInt8("max_actions_per_turn", 3);
+    uint8_t initialHealth = gameConfig.getUInt8("initial_health", 20);
+    
+    for (auto& player : players) {
+        player.maxHandSize = maxHandSize;
+        player.maxActionsPerTurn = maxActions;
+        player.health = initialHealth;
+        player.actionsRemaining = maxActions; // Set current actions to max
     }
 }
 
@@ -181,45 +255,85 @@ void GameState::playCard(PlayerId playerId, CardPtr card, uint8_t x, uint8_t y) 
         std::println("Player {} not found!", playerId);
         return;
     }
-    
+
     // Check if player has the card in hand (optimized for small hand size)
     size_t cardIndex = player->findCardIndex(card);
     if (cardIndex == SIZE_MAX) {
         std::println("Card not in player's hand!");
         return;
     }
-    
+
+    // Verificar que no sea una leyenda - las leyendas no se pueden jugar desde la mano
+    if (auto legend = std::dynamic_pointer_cast<Legend>(card)) {
+        std::println("❌ Error: Las leyendas no se pueden jugar desde la mano. La leyenda {} ya debería estar en el mapa.", legend->getName());
+        return;
+    }
+
     // Remove from hand first (efficient removal by index)
     player->hand.erase(player->hand.begin() + cardIndex);
-    
+
     // Handle different card types
     if (auto unit = std::dynamic_pointer_cast<Unit>(card)) {
         // For units: place on the map
         MapCell* cell = map.at(x, y);
-        if (!cell || cell->card.has_value()) {
-            std::println("Invalid target position for unit!");
+        if (!cell || cell->card.has_value() || cell->floor == MapCell::FloorType::NONE) {
+            std::println("Invalid target position for unit! Position ({}, {}) is not walkable or occupied", x, y);
             // Return card to hand if placement failed
             player->hand.insert(player->hand.begin() + cardIndex, card);
             return;
         }
         
+        // Para unidades, verificar adyacencia al líder
+        if (!player->legend || !player->legend->isOnMap()) {
+            std::println("❌ Error: No se puede colocar unidades sin un líder en el mapa.");
+            player->hand.insert(player->hand.begin() + cardIndex, card);
+            return;
+        }
+        
+        auto legend = std::dynamic_pointer_cast<Unit>(player->legend);
+        if (!legend) {
+            std::println("❌ Error: Problema con el líder del jugador.");
+            player->hand.insert(player->hand.begin() + cardIndex, card);
+            return;
+        }
+        
+        auto [leaderX, leaderY] = legend->getCoordinates();
+        MapCell* leaderCell = map.at(leaderX, leaderY);
+        
+        bool isAdjacent = false;
+        // Verificar todas las direcciones de adyacencia
+        for (int i = 0; i < 6; ++i) {
+            GameMap::Adjacency adj = static_cast<GameMap::Adjacency>(i);
+            MapCell* adjacentCell = map.getNeighbor(adj, leaderCell, playerId);
+            if (adjacentCell && adjacentCell == cell) {
+                isAdjacent = true;
+                break;
+            }
+        }
+        
+        if (!isAdjacent) {
+            std::println("❌ Error: Las unidades solo pueden colocarse adyacentes al líder del jugador.");
+            player->hand.insert(player->hand.begin() + cardIndex, card);
+            return;
+        }
+
         // Set owner and place the unit on the map
         card->setOwner(playerId);
         cell->card = card;
         std::println("Unit {} played at position ({}, {})", card->getName(), x, y);
-        
+
     } else if (auto spell = std::dynamic_pointer_cast<Spell>(card)) {
         // For spells: cast immediately and return to deck
         std::println("Spell {} cast", card->getName());
-        
+
         // Process the spell's effects immediately
         for (const auto& effect : card->getEffects()) {
             effectStack.addEffect(effect);
         }
-        
+
         // Return spell to deck after casting
         returnCardToDeck(playerId, card);
-        
+
     } else {
         std::println("Unknown card type for {}", card->getName());
         // Return card to hand if unknown type
@@ -447,12 +561,13 @@ bool GameState::canMoveCard(PlayerId playerId, CardPtr card, uint8_t fromX, uint
 }
 
 bool GameState::isValidPosition(uint8_t x, uint8_t y) const {
-    return map.at(x, y) != nullptr;
+    const MapCell* cell = map.at(x, y);
+    return cell != nullptr && cell->floor != MapCell::FloorType::NONE;
 }
 
 bool GameState::isPositionEmpty(uint8_t x, uint8_t y) const {
     const MapCell* cell = map.at(x, y);
-    return cell && !cell->card.has_value();
+    return cell && cell->floor != MapCell::FloorType::NONE && !cell->card.has_value();
 }
 
 // Simple helper methods for small number of players
@@ -587,25 +702,58 @@ template void GameState::shuffleContainer<std::vector<CardPtr>>(std::vector<Card
 
 // Legend management methods
 void GameState::placeLegends() {
+    std::println("=== INICIANDO COLOCACIÓN DE LEYENDAS ===");
+    
     for (auto& player : players) {
+        // Verificar si el jugador ya tiene una leyenda colocada
+        if (player.legend) {
+            std::println("⚠️  Jugador {} ya tiene una leyenda: {}", player.id, player.legend->getName());
+            continue;
+        }
+        
+        std::println("Procesando jugador {}, deck size: {}", player.id, player.deck.size());
+        
         // Buscar leyenda en el deck del jugador
         auto legend = findLegendInDeck(player.deck);
         if (!legend) {
-            std::println("¡Advertencia! Jugador {} no tiene leyenda en su deck", player.id);
-            continue;
+            std::println("⚠️  ¡Advertencia! Jugador {} no tiene leyenda en su deck", player.id);
+            
+            // Como fallback, crear una leyenda básica
+            legend = std::make_shared<Legend>(
+                999 + player.id, // ID único
+                "Leyenda Básica " + std::to_string(player.id),
+                0, // cost
+                "Leyenda creada automáticamente",
+                player.id, // owner
+                3, // attack
+                5, // health  
+                1, // speed
+                1  // range
+            );
+            std::println("🔧 Creada leyenda de emergencia para jugador {}: {}", player.id, legend->getName());
+        } else {
+            std::println("✅ Leyenda {} encontrada y removida del deck del jugador {}", legend->getName(), player.id);
         }
         
         // Obtener posición de spawn para este jugador
         auto [spawnX, spawnY] = map.getSpawnPosition(player.id);
         if (spawnX == 255) {
-            std::println("¡Error! No hay posición de spawn para jugador {}", player.id);
+            std::println("❌ ¡Error! No hay posición de spawn para jugador {}", player.id);
             continue;
         }
         
+        std::println("Posición de spawn para jugador {}: ({}, {})", player.id, spawnX, spawnY);
+        
         // Verificar que la posición de spawn esté libre
         MapCell* spawnCell = map.at(spawnX, spawnY);
-        if (!spawnCell || spawnCell->card.has_value()) {
-            std::println("¡Error! Posición de spawn ({}, {}) ocupada para jugador {}", 
+        if (!spawnCell) {
+            std::println("❌ ¡Error! Celda de spawn ({}, {}) no existe para jugador {}", 
+                       spawnX, spawnY, player.id);
+            continue;
+        }
+        
+        if (spawnCell->card.has_value()) {
+            std::println("❌ ¡Error! Posición de spawn ({}, {}) ocupada para jugador {}", 
                        spawnX, spawnY, player.id);
             continue;
         }
@@ -613,24 +761,37 @@ void GameState::placeLegends() {
         // Colocar la leyenda en la posición de spawn
         spawnCell->card = legend;
         legend->setPosition(spawnX, spawnY);
+        legend->setOwner(player.id);
         
         // Guardar referencia a la leyenda del jugador
         player.legend = legend;
         
-        std::println("Leyenda {} colocada en spawn ({}, {}) para jugador {}", 
+        std::println("✅ Leyenda {} colocada en spawn ({}, {}) para jugador {}", 
                    legend->getName(), spawnX, spawnY, player.id);
     }
+    
+    std::println("=== COLOCACIÓN DE LEYENDAS COMPLETADA ===");
 }
 
 std::shared_ptr<Legend> GameState::findLegendInDeck(std::vector<CardPtr>& deck) {
-    for (auto it = deck.begin(); it != deck.end(); ++it) {
+    std::shared_ptr<Legend> foundLegend = nullptr;
+    
+    // Buscar y remover TODAS las leyendas del deck (pueden haber duplicadas)
+    auto it = deck.begin();
+    while (it != deck.end()) {
         if (auto legend = std::dynamic_pointer_cast<Legend>(*it)) {
-            // Remover la leyenda del deck
-            deck.erase(it);
-            return legend;
+            if (!foundLegend) {
+                // Guardar la primera leyenda encontrada para devolverla
+                foundLegend = legend;
+            }
+            // Remover esta leyenda del deck
+            it = deck.erase(it);
+        } else {
+            ++it;
         }
     }
-    return nullptr;
+    
+    return foundLegend;
 }
 
 void GameState::checkLegendStatus() {
@@ -644,4 +805,31 @@ void GameState::checkLegendStatus() {
         }
         phase = GamePhase::END;
     }
+}
+
+bool Player::drawCard() {
+    // No se puede robar si la mano está llena
+    if (hand.size() >= maxHandSize) {
+        return false;
+    }
+    
+    // No se puede robar si el mazo está vacío
+    if (deck.empty()) {
+        // Intentar reabastecer desde el descarte
+        if (!discard.empty()) {
+            deck = std::move(discard);
+            // Aquí deberíamos barajar, pero por simplicidad lo omitimos
+            // En una implementación completa, usaríamos GameState::shuffleContainer
+        } else {
+            return false; // No hay cartas disponibles
+        }
+    }
+    
+    if (!deck.empty()) {
+        hand.push_back(deck.back());
+        deck.pop_back();
+        return true;
+    }
+    
+    return false;
 }

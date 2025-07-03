@@ -1,8 +1,8 @@
 #pragma once
 #include "../cards/Card.hpp"
-#include "../effects/EffectFactory.hpp"
-#include "../effects/impl/BasicEffects.hpp"
+#include "../effects/ComposedEffectFactory.hpp"
 #include "../game/GameMap.hpp"
+#include "../lex/ConfigLexer.hpp"
 #include <vector>
 #include <string>
 #include <memory>
@@ -11,12 +11,30 @@
 class CardLoader {
 public:
     struct EffectConfig {
-        std::string type;           // "attack_buff", "health_debuff", "damage", etc.
-        std::string target;         // "self", "adjacent", "all_friendly", "all_enemy", "specific_position"
-        int value = 0;              // The effect value (positive or negative)
-        std::string trigger;        // "on_play", "on_enter_position", "on_start_turn", etc.
-        std::string direction = ""; // For positional effects: "up", "down", "left", "right", etc.
-        uint8_t x = 0, y = 0;      // For specific position targets
+        ConfigLexer::EffectType type;           // "attribute_modifier", "direct_damage", "heal", etc.
+        ConfigLexer::TargetType target_type;    // "self", "adjacent", "all_allies", "attack_target", etc.
+        ConfigLexer::TargetFilter filter;       // "allies_only", "enemies_only", "any"
+        int value = 0;                          // The effect value (positive or negative)
+        ConfigLexer::TriggerType trigger;       // "on_play", "on_attack", "on_death", "turn_start", etc.
+        std::string attribute = "";             // For attribute modifiers: "attack", "health", "speed"
+        int duration = 0;                       // Duration: 0=instant, 1+=turns, -1=persistent
+        std::vector<GameMap::Adjacency> directions; // For adjacent targeting: parsed directions
+        uint8_t x = 0, y = 0;                  // For specific position targets
+        
+        // Helper method to determine if this effect uses adjacency
+        bool isAdjacencyEffect() const {
+            return target_type == ConfigLexer::TargetType::ADJACENT && !directions.empty();
+        }
+        
+        // Helper method to determine if effect is persistent
+        bool isPersistent() const {
+            return duration == -1;
+        }
+        
+        // Helper method to determine if effect is instant
+        bool isInstant() const {
+            return duration == 0;
+        }
     };
     
     struct CardConfig {
@@ -52,12 +70,18 @@ private:
     static CardConfig parseCard(const nlohmann::json& cardJson);
     static DeckConfig parseDeck(const nlohmann::json& deckJson);
     
-    // Helper to convert string to TargetType
-    static AttackModifierEffect::TargetType parseTargetType(const std::string& target);
-    
     // Helper to convert string to Adjacency
     static GameMap::Adjacency parseDirection(const std::string& direction);
     
     // Helper to create effect from config
     static EffectPtr createEffectFromConfig(const EffectConfig& config, CardPtr source, PlayerId owner);
+    
+    // Método para crear un efecto compuesto a partir de la configuración
+    static EffectPtr createComposedEffectFromConfig(const EffectConfig& config, CardPtr source, PlayerId owner) {
+        // Usar el nuevo método con enums
+        return ComposedEffectFactory::createFromConfig(
+            config.type, config.trigger, config.target_type, source, owner, 
+            config.value, config.filter, config.directions, config.attribute
+        );
+    }
 };

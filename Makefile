@@ -1,23 +1,26 @@
-# Makefile para compilar el test de carga de cartas
+# Makefile para compilar el sistema de pruebas unificado
 
 CXX = g++
 CXXFLAGS = -std=c++23 -Wall -Wextra -O2 -I. -Ilibs -DSIMDJSON_IMPLEMENTATION
-TARGET = test_card_loading
-SOURCES = test_card_loading.cpp src/cards/CardLoader.cpp src/game/GameState.cpp src/effects/EffectDispatch.cpp src/lex/EffectLexer.cpp
 
-all: $(TARGET)
+# Aplicación principal unificada
+TARGET_MAIN = main
+SOURCES_MAIN = main.cpp src/api/GameAPI.cpp src/cards/CardLoader.cpp src/game/GameState.cpp src/lex/EffectLexer.cpp
 
-$(TARGET): $(SOURCES)
-	$(CXX) $(CXXFLAGS) $(SOURCES) -o $(TARGET)
+all: $(TARGET_MAIN)
+
+$(TARGET_MAIN): $(SOURCES_MAIN)
+	$(CXX) $(CXXFLAGS) $(SOURCES_MAIN) -o $(TARGET_MAIN) 2>&1 | tee compilation_result.temp
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET_MAIN) compilation_result.temp
 
-test: $(TARGET)
-	./$(TARGET)
+test: $(TARGET_MAIN)
+	./$(TARGET_MAIN)
 
+.PHONY: all clean test
 # Hacer el script ejecutable
 make_executable:
 	chmod +x build_and_test.sh
 
-.PHONY: all clean test make_executable
+.PHONY: all clean test test-api make_executable

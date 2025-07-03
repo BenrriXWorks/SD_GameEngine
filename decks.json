@@ -1,132 +1,36 @@
 {
   "decks": [
     {
-      "name": "Deck de Combate Básico",
+      "name": "Team Alpha - Deck de Guerreros",
       "cards": [
         {
           "id": 1,
           "name": "Rey Guerrero",
-          "description": "Leyenda poderosa que lidera las tropas",
+          "description": "Leyenda que fortalece a los aliados adyacentes al ser invocado",
           "cost": 0,
-          "type": "legend",
+          "type": "legend", 
           "attack": 4,
-          "health": 6,
+          "health": 8,
           "speed": 2,
           "range": 1,
           "effects": [
             {
-              "type": "adjacency_buff",
-              "target": "adjacent",
+              "type": "attribute_modifier",
+              "target_type": "adjacent",
+              "filter": "allies_only",
+              "trigger": "on_play",
+              "directions": ["up", "down", "top_left", "top_right", "bottom_left", "bottom_right"],
+              "attribute": "attack",
               "value": 2,
-              "trigger": "on_play"
+              "duration": 1
             }
           ]
         },
         {
           "id": 2,
-          "name": "Guerrero Básico",
-          "description": "Un guerrero simple pero efectivo",
+          "name": "Guardia Elite",
+          "description": "Unidad defensiva que debilita enemigos cercanos",
           "cost": 2,
-          "type": "unit",
-          "attack": 2,
-          "health": 3,
-          "speed": 1,
-          "range": 1,
-          "effects": []
-        },
-        {
-          "id": 3,
-          "name": "Arquero",
-          "description": "Ataca desde la distancia",
-          "cost": 3,
-          "type": "unit",
-          "attack": 2,
-          "health": 2,
-          "speed": 1,
-          "range": 2,
-          "effects": []
-        },
-        {
-          "id": 4,
-          "name": "Berserker",
-          "description": "Gana +1 ataque cuando se coloca",
-          "cost": 3,
-          "type": "unit",
-          "attack": 2,
-          "health": 3,
-          "speed": 1,
-          "range": 1,
-          "effects": [
-            {
-              "type": "attack_buff",
-              "target": "self",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 5,
-          "name": "Curandero",
-          "description": "Cura +2 vida a unidades adyacentes aliadas",
-          "cost": 4,
-          "type": "unit",
-          "attack": 1,
-          "health": 4,
-          "speed": 1,
-          "range": 1,
-          "effects": [
-            {
-              "type": "heal",
-              "target": "adjacent",
-              "value": 2,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 6,
-          "name": "Capitán",
-          "description": "Da +1 ataque a todas las unidades aliadas",
-          "cost": 5,
-          "type": "unit",
-          "attack": 3,
-          "health": 4,
-          "speed": 1,
-          "range": 1,
-          "effects": [
-            {
-              "type": "attack_buff",
-              "target": "all_friendly",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 7,
-          "name": "Espía",
-          "description": "Reduce -1 ataque a enemigos adyacentes",
-          "cost": 3,
-          "type": "unit",
-          "attack": 2,
-          "health": 2,
-          "speed": 2,
-          "range": 1,
-          "effects": [
-            {
-              "type": "attack_debuff",
-              "target": "adjacent",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 8,
-          "name": "Guardián",
-          "description": "Cuando un enemigo se coloca enfrente, le hace 1 de daño",
-          "cost": 4,
           "type": "unit",
           "attack": 2,
           "health": 5,
@@ -134,104 +38,55 @@
           "range": 1,
           "effects": [
             {
-              "type": "positional_trigger",
-              "target": "specific_position",
-              "value": 1,
-              "trigger": "on_enemy_enter",
-              "direction": "up"
+              "type": "attribute_modifier", 
+              "target_type": "adjacent",
+              "filter": "enemies_only",
+              "trigger": "on_play",
+              "directions": ["up", "down", "top_left", "top_right", "bottom_left", "bottom_right"],
+              "attribute": "attack",
+              "value": -1,
+              "duration": -1
             }
           ]
         },
         {
-          "id": 9,
-          "name": "Francotirador",
-          "description": "Tiene alcance extendido (+1 rango)",
-          "cost": 4,
+          "id": 3,
+          "name": "Arquero Certero",
+          "description": "Ataca a distancia y causa daño extra al atacar",
+          "cost": 3,
           "type": "unit",
           "attack": 3,
+          "health": 3,
+          "speed": 2,
+          "range": 2,
+          "effects": [
+            {
+              "type": "direct_damage",
+              "target_type": "attack_target", 
+              "filter": "any",
+              "trigger": "on_attack",
+              "value": 1,
+              "duration": 0
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "Soldado Raso",
+          "description": "Unidad básica sin efectos especiales",
+          "cost": 1,
+          "type": "unit",
+          "attack": 2,
           "health": 2,
-          "speed": 1,
+          "speed": 2,
           "range": 1,
-          "effects": [
-            {
-              "type": "range_buff",
-              "target": "self",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
+          "effects": []
         },
         {
-          "id": 10,
-          "name": "Bola de Fuego",
-          "description": "Hechizo que hace 3 de daño a un objetivo",
-          "cost": 3,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "damage",
-              "target": "specific_position",
-              "value": 3,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 11,
-          "name": "Bendición",
-          "description": "Da +1/+1 a una unidad aliada",
-          "cost": 2,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "attack_buff",
-              "target": "specific_position",
-              "value": 1,
-              "trigger": "on_cast"
-            },
-            {
-              "type": "health_buff",
-              "target": "specific_position",
-              "value": 1,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 12,
-          "name": "Rayo",
-          "description": "Hace 2 de daño a todos los enemigos",
-          "cost": 5,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "damage",
-              "target": "all_enemy",
-              "value": 2,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 13,
-          "name": "Curación Masiva",
-          "description": "Cura 2 puntos a todas las unidades aliadas",
-          "cost": 4,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "heal",
-              "target": "all_friendly",
-              "value": 2,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 14,
+          "id": 5,
           "name": "Caballero Pesado",
-          "description": "Unidad resistente que reduce el alcance de enemigos adyacentes",
-          "cost": 5,
+          "description": "Unidad tanque que gana vida al matar enemigos",
+          "cost": 4,
           "type": "unit",
           "attack": 3,
           "health": 6,
@@ -239,86 +94,20 @@
           "range": 1,
           "effects": [
             {
-              "type": "range_debuff",
-              "target": "adjacent",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 15,
-          "name": "Mago de Batalla",
-          "description": "Aumenta su propio alcance y ataque",
-          "cost": 4,
-          "type": "unit",
-          "attack": 2,
-          "health": 3,
-          "speed": 1,
-          "range": 1,
-          "effects": [
-            {
-              "type": "range_buff",
-              "target": "self",
-              "value": 1,
-              "trigger": "on_play"
-            },
-            {
-              "type": "attack_buff",
-              "target": "self",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 16,
-          "name": "Asesino",
-          "description": "Cuando un enemigo se coloca a la izquierda, le hace 2 de daño",
-          "cost": 4,
-          "type": "unit",
-          "attack": 3,
-          "health": 2,
-          "speed": 2,
-          "range": 1,
-          "effects": [
-            {
-              "type": "positional_trigger",
-              "target": "specific_position",
+              "type": "attribute_modifier",
+              "target_type": "self",
+              "filter": "any",
+              "trigger": "on_kill",
+              "attribute": "health",
               "value": 2,
-              "trigger": "on_enemy_enter",
-              "direction": "left"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Deck de Apoyo Táctico",
-      "cards": [
-        {
-          "id": 17,
-          "name": "Reina Estratega",
-          "description": "Leyenda táctica que coordina las tropas",
-          "cost": 0,
-          "type": "legend",
-          "attack": 3,
-          "health": 5,
-          "speed": 2,
-          "range": 2,
-          "effects": [
-            {
-              "type": "targeted_buff",
-              "target": "ally",
-              "value": 1,
-              "trigger": "on_play"
+              "duration": 0
             }
           ]
         },
         {
-          "id": 19,
-          "name": "Explorador",
-          "description": "Unidad rápida y ágil",
+          "id": 6,
+          "name": "Explorador Veloz",
+          "description": "Unidad rápida que se mueve extra al ser jugada",
           "cost": 2,
           "type": "unit",
           "attack": 1,
@@ -328,48 +117,10 @@
           "effects": []
         },
         {
-          "id": 19,
-          "name": "Ingeniero",
-          "description": "Buffa el alcance de unidades adyacentes",
+          "id": 7,
+          "name": "Sanador de Campo",
+          "description": "Cura a aliados adyacentes al inicio de cada turno",
           "cost": 3,
-          "type": "unit",
-          "attack": 1,
-          "health": 3,
-          "speed": 1,
-          "range": 1,
-          "effects": [
-            {
-              "type": "range_buff",
-              "target": "adjacent",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 20,
-          "name": "Comandante",
-          "description": "Da +2 ataque a todas las unidades aliadas",
-          "cost": 6,
-          "type": "unit",
-          "attack": 3,
-          "health": 5,
-          "speed": 1,
-          "range": 1,
-          "effects": [
-            {
-              "type": "attack_buff",
-              "target": "all_friendly",
-              "value": 2,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 21,
-          "name": "Médico de Campo",
-          "description": "Cura +3 vida a unidades adyacentes",
-          "cost": 4,
           "type": "unit",
           "attack": 1,
           "health": 4,
@@ -378,218 +129,203 @@
           "effects": [
             {
               "type": "heal",
-              "target": "adjacent",
-              "value": 3,
-              "trigger": "on_play"
+              "target_type": "adjacent",
+              "filter": "allies_only",
+              "trigger": "turn_start",
+              "directions": ["up", "down", "top_left", "top_right", "bottom_left", "bottom_right"],
+              "value": 1,
+              "duration": -1
             }
           ]
         },
         {
-          "id": 22,
-          "name": "Saboteador",
-          "description": "Reduce -2 ataque a todos los enemigos",
-          "cost": 5,
+          "id": 8,
+          "name": "Berserker Feroz",
+          "description": "Gana ataque cuando es atacado",
+          "cost": 3,
           "type": "unit",
           "attack": 2,
           "health": 3,
-          "speed": 1,
+          "speed": 2,
           "range": 1,
           "effects": [
             {
-              "type": "attack_debuff",
-              "target": "all_enemy",
-              "value": 2,
-              "trigger": "on_play"
+              "type": "attribute_modifier",
+              "target_type": "self",
+              "filter": "any",
+              "trigger": "on_attacked",
+              "attribute": "attack",
+              "value": 1,
+              "duration": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Team Beta - Deck de Magos",
+      "cards": [
+        {
+          "id": 101,
+          "name": "Archimaga Ancestral",
+          "description": "Leyenda que otorga velocidad extra a todos los aliados",
+          "cost": 0,
+          "type": "legend",
+          "attack": 3,
+          "health": 7,
+          "speed": 2,
+          "range": 2,
+          "effects": [
+            {
+              "type": "attribute_modifier",
+              "target_type": "all_allies",
+              "filter": "allies_only",
+              "trigger": "on_play",
+              "attribute": "speed",
+              "value": 1,
+              "duration": 1
             }
           ]
         },
         {
-          "id": 23,
-          "name": "Vigía",
-          "description": "Cuando un enemigo se coloca a la derecha, le hace 1 de daño",
+          "id": 102,
+          "name": "Elemental de Fuego",
+          "description": "Quema enemigos adyacentes cada turno",
           "cost": 3,
           "type": "unit",
           "attack": 2,
           "health": 3,
-          "speed": 1,
-          "range": 2,
+          "speed": 2,
+          "range": 1,
           "effects": [
             {
-              "type": "positional_trigger",
-              "target": "specific_position",
+              "type": "direct_damage",
+              "target_type": "adjacent",
+              "filter": "enemies_only", 
+              "trigger": "turn_start",
+              "directions": ["up", "down"],
               "value": 1,
-              "trigger": "on_enemy_enter",
-              "direction": "right"
+              "duration": -1
             }
           ]
         },
         {
-          "id": 24,
-          "name": "Especialista",
-          "description": "Se buffa a sí mismo con +1 ataque y +1 vida",
-          "cost": 3,
+          "id": 103,
+          "name": "Aprendiz de Mago",
+          "description": "Unidad básica mágica",
+          "cost": 1,
           "type": "unit",
-          "attack": 2,
+          "attack": 1,
           "health": 2,
+          "speed": 2,
+          "range": 2,
+          "effects": []
+        },
+        {
+          "id": 104,
+          "name": "Místico Curador",
+          "description": "Cura a todos los aliados al ser jugado",
+          "cost": 4,
+          "type": "unit",
+          "attack": 1,
+          "health": 5,
           "speed": 1,
           "range": 1,
           "effects": [
             {
-              "type": "attack_buff",
-              "target": "self",
-              "value": 1,
-              "trigger": "on_play"
-            },
-            {
-              "type": "health_buff",
-              "target": "self",
-              "value": 1,
-              "trigger": "on_play"
-            }
-          ]
-        },
-        {
-          "id": 25,
-          "name": "Tormenta de Hielo",
-          "description": "Hace 1 de daño a todos los enemigos y reduce su alcance",
-          "cost": 4,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "damage",
-              "target": "all_enemy",
-              "value": 1,
-              "trigger": "on_cast"
-            },
-            {
-              "type": "range_debuff",
-              "target": "all_enemy",
-              "value": 1,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 26,
-          "name": "Moral Alta",
-          "description": "Da +1 vida a todas las unidades aliadas",
-          "cost": 3,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "health_buff",
-              "target": "all_friendly",
-              "value": 1,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 27,
-          "name": "Precisión",
-          "description": "Da +1 alcance a todas las unidades aliadas",
-          "cost": 3,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "range_buff",
-              "target": "all_friendly",
-              "value": 1,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 28,
-          "name": "Debilitamiento",
-          "description": "Reduce -1 vida a todos los enemigos",
-          "cost": 3,
-          "type": "spell",
-          "effects": [
-            {
-              "type": "health_debuff",
-              "target": "all_enemy",
-              "value": 1,
-              "trigger": "on_cast"
-            }
-          ]
-        },
-        {
-          "id": 29,
-          "name": "Francotirador Elite",
-          "description": "Unidad de largo alcance que se buffa el alcance aún más",
-          "cost": 5,
-          "type": "unit",
-          "attack": 4,
-          "health": 3,
-          "speed": 1,
-          "range": 2,
-          "effects": [
-            {
-              "type": "range_buff",
-              "target": "self",
+              "type": "heal",
+              "target_type": "all_allies",
+              "filter": "allies_only",
+              "trigger": "on_play",
               "value": 2,
-              "trigger": "on_play"
+              "duration": 0
             }
           ]
         },
         {
-          "id": 30,
-          "name": "Campeón",
-          "description": "Se fortalece significativamente cuando entra",
-          "cost": 6,
+          "id": 105,
+          "name": "Golem de Cristal",
+          "description": "Unidad resistente que refleja daño",
+          "cost": 5,
           "type": "unit",
           "attack": 3,
-          "health": 4,
+          "health": 7,
           "speed": 1,
           "range": 1,
           "effects": [
             {
-              "type": "attack_buff",
-              "target": "self",
-              "value": 2,
-              "trigger": "on_play"
-            },
-            {
-              "type": "health_buff",
-              "target": "self",
-              "value": 2,
-              "trigger": "on_play"
+              "type": "reflect_damage",
+              "target_type": "attacker",
+              "filter": "enemies_only",
+              "trigger": "on_attacked",
+              "value": 1,
+              "duration": 0
             }
           ]
         },
         {
-          "id": 31,
-          "name": "Centinela",
-          "description": "Cuando un enemigo se coloca abajo, le hace 2 de daño",
+          "id": 106,
+          "name": "Invocador de Tormentas",
+          "description": "Al atacar, hace daño adicional",
           "cost": 4,
           "type": "unit",
           "attack": 2,
           "health": 4,
-          "speed": 1,
-          "range": 1,
+          "speed": 2,
+          "range": 3,
           "effects": [
             {
-              "type": "positional_trigger",
-              "target": "specific_position",
-              "value": 2,
-              "trigger": "on_enemy_enter",
-              "direction": "down"
+              "type": "direct_damage",
+              "target_type": "attack_target",
+              "filter": "any",
+              "trigger": "on_attack",
+              "value": 1,
+              "duration": 0
             }
           ]
         },
         {
-          "id": 32,
-          "name": "Devastación",
-          "description": "Hace 4 de daño a un objetivo específico",
-          "cost": 5,
-          "type": "spell",
+          "id": 107,
+          "name": "Espíritu Guardián",
+          "description": "Protege a aliados cercanos aumentando su salud",
+          "cost": 3,
+          "type": "unit",
+          "attack": 1,
+          "health": 4,
+          "speed": 1,
+          "range": 1,
           "effects": [
             {
-              "type": "damage",
-              "target": "specific_position",
-              "value": 4,
-              "trigger": "on_cast"
+              "type": "attribute_modifier",
+              "target_type": "adjacent",
+              "filter": "allies_only",
+              "trigger": "on_play",
+              "directions": ["up", "down", "top_left", "top_right", "bottom_left", "bottom_right"],
+              "attribute": "health",
+              "value": 1,
+              "duration": 1
+            }
+          ]
+        },
+        {
+          "id": 108,
+          "name": "Mago Destructor",
+          "description": "Al morir, hace daño a todas las unidades adyacentes",
+          "cost": 3,
+          "type": "unit",
+          "attack": 2,
+          "health": 3,
+          "speed": 2,
+          "range": 1,
+          "effects": [
+            {
+              "type": "direct_damage",
+              "target_type": "adjacent",
+              "filter": "any",
+              "trigger": "on_death",
+              "directions": ["up", "down", "top_left", "top_right", "bottom_left", "bottom_right"],
+              "value": 2,
+              "duration": 0
             }
           ]
         }

@@ -3,7 +3,7 @@
 
 namespace lex {
 
-    std::expected<EffectType, ParseError> EffectLexer::parseEffectTypeImpl(const char* input) {
+    std::expected<ConfigLexer::EffectType, ParseError> EffectLexer::parseEffectTypeImpl(const char* input) {
         const char* ptr = input;
         
         switch (*ptr) {
@@ -13,12 +13,10 @@ namespace lex {
                 goto state_d;
             case 'h':
                 goto state_h;
-            case 'p':
-                goto state_p;
             case 'r':
                 goto state_r;
-            case 't':
-                goto state_t; // Nuevo: targeted effects
+            case 'e':
+                goto state_e;
             default:
                 return std::unexpected(ParseError::UNKNOWN_PREFIX);
         }
@@ -27,126 +25,44 @@ namespace lex {
         ++ptr;
         if (!*ptr) return std::unexpected(ParseError::INCOMPLETE_INPUT);
         
-        switch (*ptr) {
-            case 'd':
-                goto state_ad; // adjacency_buff
-            case 't':
-                goto state_at; // attack_*
-            default:
-                return std::unexpected(ParseError::MALFORMED_STRING);
-        }
-
-    state_ad:
-        ++ptr;
-        if (memcmp(ptr, "jacency_buff", 12) == 0 && ptr[12] == '\0') {
-            return EffectType::ADJACENCY_BUFF;
-        }
-        return std::unexpected(ParseError::MALFORMED_STRING);
-
-    state_at:
-        ++ptr;
-        if (memcmp(ptr, "tack_", 5) == 0) {
-            ptr += 5;
-            if (memcmp(ptr, "buff", 4) == 0 && ptr[4] == '\0') {
-                return EffectType::ATTACK_BUFF;
-            }
-            if (memcmp(ptr, "debuff", 6) == 0 && ptr[6] == '\0') {
-                return EffectType::ATTACK_DEBUFF;
-            }
+        if (memcmp(ptr, "ttribute_modifier", 17) == 0 && ptr[17] == '\0') {
+            return ConfigLexer::EffectType::ATTRIBUTE_MODIFIER;
         }
         return std::unexpected(ParseError::MALFORMED_STRING);
 
     state_d:
         ++ptr;
-        if (memcmp(ptr, "amage", 5) == 0 && ptr[5] == '\0') {
-            return EffectType::DAMAGE;
+        if (memcmp(ptr, "irect_damage", 12) == 0 && ptr[12] == '\0') {
+            return ConfigLexer::EffectType::DIRECT_DAMAGE;
+        }
+        if (memcmp(ptr, "raw_cards", 9) == 0 && ptr[9] == '\0') {
+            return ConfigLexer::EffectType::DRAW_CARDS;
+        }
+        if (memcmp(ptr, "estroy", 6) == 0 && ptr[6] == '\0') {
+            return ConfigLexer::EffectType::DESTROY;
         }
         return std::unexpected(ParseError::MALFORMED_STRING);
 
     state_h:
         ++ptr;
-        if (!*ptr) return std::unexpected(ParseError::INCOMPLETE_INPUT);
-        
-        // Check for "heal" first
-        if (memcmp(ptr, "eal", 3) == 0) {
-            ptr += 3;
-            if (*ptr == '\0') return EffectType::HEAL;
-            
-            // Check for "health_buff" or "health_debuff"
-            if (memcmp(ptr, "th_", 3) == 0) {
-                ptr += 3;
-                if (memcmp(ptr, "buff", 4) == 0 && ptr[4] == '\0') {
-                    return EffectType::HEALTH_BUFF;
-                }
-                if (memcmp(ptr, "debuff", 6) == 0 && ptr[6] == '\0') {
-                    return EffectType::HEALTH_DEBUFF;
-                }
-            }
-        }
-        return std::unexpected(ParseError::MALFORMED_STRING);
-
-    state_p:
-        ++ptr;
-        if (memcmp(ptr, "osition", 7) == 0) {
-            ptr += 7;
-            
-            if (*ptr == '_') {
-                ++ptr;
-                if (memcmp(ptr, "enter_effect", 12) == 0 && ptr[12] == '\0') {
-                    return EffectType::POSITION_ENTER_EFFECT;
-                }
-            }
-            
-            if (memcmp(ptr, "al_", 3) == 0) {
-                ptr += 3;
-                if (memcmp(ptr, "debuff", 6) == 0 && ptr[6] == '\0') {
-                    return EffectType::POSITIONAL_DEBUFF;
-                }
-                if (memcmp(ptr, "trigger", 7) == 0 && ptr[7] == '\0') {
-                    return EffectType::POSITIONAL_TRIGGER;
-                }
-            }
+        if (memcmp(ptr, "eal", 3) == 0 && ptr[3] == '\0') {
+            return ConfigLexer::EffectType::HEAL;
         }
         return std::unexpected(ParseError::MALFORMED_STRING);
 
     state_r:
         ++ptr;
-        if (memcmp(ptr, "ange_", 5) == 0) {
-            ptr += 5;
-            if (memcmp(ptr, "buff", 4) == 0 && ptr[4] == '\0') {
-                return EffectType::RANGE_BUFF;
-            }
-            if (memcmp(ptr, "debuff", 6) == 0 && ptr[6] == '\0') {
-                return EffectType::RANGE_DEBUFF;
-            }
-            if (memcmp(ptr, "effect", 6) == 0 && ptr[6] == '\0') {
-                return EffectType::RANGE_EFFECT;
-            }
+        if (memcmp(ptr, "eflect_damage", 13) == 0 && ptr[13] == '\0') {
+            return ConfigLexer::EffectType::REFLECT_DAMAGE;
         }
         return std::unexpected(ParseError::MALFORMED_STRING);
 
-    state_t:
-        ++ptr;
-        if (memcmp(ptr, "argeted_", 8) == 0) {
-            ptr += 8;
-            if (memcmp(ptr, "heal", 4) == 0 && ptr[4] == '\0') {
-                return EffectType::TARGETED_HEAL;
-            }
-            if (memcmp(ptr, "damage", 6) == 0 && ptr[6] == '\0') {
-                return EffectType::TARGETED_DAMAGE;
-            }
-            if (memcmp(ptr, "buff", 4) == 0 && ptr[4] == '\0') {
-                return EffectType::TARGETED_BUFF;
-            }
-            if (memcmp(ptr, "debuff", 6) == 0 && ptr[6] == '\0') {
-                return EffectType::TARGETED_DEBUFF;
-            }
-        }
+    state_e:
+        // This is a stub for future effect types starting with 'e'
         return std::unexpected(ParseError::MALFORMED_STRING);
-
     } // Fin de parseEffectTypeImpl
 
-    std::expected<AttackModifierEffect::TargetType, ParseError> EffectLexer::parseTargetTypeImpl(const char* input) {
+    std::expected<ConfigLexer::TargetType, ParseError> EffectLexer::parseTargetTypeImpl(const char* input) {
         const char* ptr = input;
         
         switch (*ptr) {
@@ -154,49 +70,62 @@ namespace lex {
                 goto target_a;
             case 's':
                 goto target_s;
+            case 'g':
+                goto target_g;
             default:
-                return AttackModifierEffect::TargetType::SELF;
+                return std::unexpected(ParseError::UNKNOWN_PREFIX);
         }
 
     target_a:
         ++ptr;
-        if (!*ptr) return AttackModifierEffect::TargetType::SELF;
+        if (!*ptr) return std::unexpected(ParseError::INCOMPLETE_INPUT);
         
-        if (*ptr == 'd') {
-            ++ptr;
-            if (memcmp(ptr, "jacent", 6) == 0 && ptr[6] == '\0') {
-                return AttackModifierEffect::TargetType::ADJACENT;
-            }
-        } else if (*ptr == 'l') {
+        if (memcmp(ptr, "djacent", 7) == 0 && ptr[7] == '\0') {
+            return ConfigLexer::TargetType::ADJACENT;
+        }
+        if (memcmp(ptr, "ttack_target", 12) == 0 && ptr[12] == '\0') {
+            return ConfigLexer::TargetType::ATTACK_TARGET;
+        }
+        if (memcmp(ptr, "ttacker", 7) == 0 && ptr[7] == '\0') {
+            return ConfigLexer::TargetType::ATTACKER;
+        }
+        if (*ptr == 'l') {
             ++ptr;
             if (memcmp(ptr, "l_", 2) == 0) {
                 ptr += 2;
-                if (memcmp(ptr, "enemy", 5) == 0 && ptr[5] == '\0') {
-                    return AttackModifierEffect::TargetType::ALL_ENEMY;
+                if (memcmp(ptr, "allies", 6) == 0 && ptr[6] == '\0') {
+                    return ConfigLexer::TargetType::ALL_ALLIES;
                 }
-                if (memcmp(ptr, "friendly", 8) == 0 && ptr[8] == '\0') {
-                    return AttackModifierEffect::TargetType::ALL_FRIENDLY;
+                if (memcmp(ptr, "enemies", 7) == 0 && ptr[7] == '\0') {
+                    return ConfigLexer::TargetType::ALL_ENEMIES;
                 }
             }
         }
-        return AttackModifierEffect::TargetType::SELF;
+        return std::unexpected(ParseError::MALFORMED_STRING);
 
     target_s:
         ++ptr;
-        if (!*ptr) return AttackModifierEffect::TargetType::SELF;
+        if (!*ptr) return std::unexpected(ParseError::INCOMPLETE_INPUT);
         
         if (*ptr == 'e') {
             ++ptr;
             if (memcmp(ptr, "lf", 2) == 0 && ptr[2] == '\0') {
-                return AttackModifierEffect::TargetType::SELF;
+                return ConfigLexer::TargetType::SELF;
             }
         } else if (*ptr == 'p') {
             ++ptr;
             if (memcmp(ptr, "ecific_position", 15) == 0 && ptr[15] == '\0') {
-                return AttackModifierEffect::TargetType::SPECIFIC_POSITION;
+                return ConfigLexer::TargetType::SPECIFIC_POSITION;
             }
         }
-        return AttackModifierEffect::TargetType::SELF;
+        return std::unexpected(ParseError::MALFORMED_STRING);
+
+    target_g:
+        ++ptr;
+        if (memcmp(ptr, "ame_state", 9) == 0 && ptr[9] == '\0') {
+            return ConfigLexer::TargetType::GAME_STATE;
+        }
+        return std::unexpected(ParseError::MALFORMED_STRING);
     }
 
     std::expected<GameMap::Adjacency, ParseError> EffectLexer::parseDirectionImpl(const char* input) {
@@ -267,6 +196,75 @@ namespace lex {
                 return GameMap::Adjacency::BOTTOM_LEFT;
             if (memcmp(ptr, "right", 5) == 0 && ptr[5] == '\0')
                 return GameMap::Adjacency::BOTTOM_RIGHT;
+        }
+        return std::unexpected(ParseError::MALFORMED_STRING);
+    }
+
+    std::expected<ConfigLexer::TriggerType, ParseError> EffectLexer::parseTriggerTypeImpl(const char* input) {
+        const char* ptr = input;
+        
+        switch (*ptr) {
+            case 'o':
+                goto trigger_o;
+            case 't':
+                goto trigger_t;
+            default:
+                return std::unexpected(ParseError::UNKNOWN_PREFIX);
+        }
+
+    trigger_o:
+        ++ptr;
+        if (!*ptr) return std::unexpected(ParseError::INCOMPLETE_INPUT);
+        
+        if (*ptr == 'n') {
+            ++ptr;
+            if (*ptr == '_') {
+                ++ptr;
+                switch (*ptr) {
+                    case 'p':
+                        ++ptr;
+                        if (memcmp(ptr, "lay", 3) == 0 && ptr[3] == '\0') {
+                            return ConfigLexer::TriggerType::ON_PLAY;
+                        }
+                        break;
+                    case 'a':
+                        ++ptr;
+                        if (memcmp(ptr, "ttack", 5) == 0 && ptr[5] == '\0') {
+                            return ConfigLexer::TriggerType::ON_ATTACK;
+                        }
+                        if (memcmp(ptr, "ttacked", 7) == 0 && ptr[7] == '\0') {
+                            return ConfigLexer::TriggerType::ON_ATTACKED;
+                        }
+                        break;
+                    case 'k':
+                        ++ptr;
+                        if (memcmp(ptr, "ill", 3) == 0 && ptr[3] == '\0') {
+                            return ConfigLexer::TriggerType::ON_KILL;
+                        }
+                        break;
+                    case 'd':
+                        ++ptr;
+                        if (memcmp(ptr, "eath", 4) == 0 && ptr[4] == '\0') {
+                            return ConfigLexer::TriggerType::ON_DEATH;
+                        }
+                        break;
+                }
+            }
+        }
+        return std::unexpected(ParseError::MALFORMED_STRING);
+
+    trigger_t:
+        ++ptr;
+        if (!*ptr) return std::unexpected(ParseError::INCOMPLETE_INPUT);
+        
+        if (memcmp(ptr, "urn_", 4) == 0) {
+            ptr += 4;
+            if (memcmp(ptr, "start", 5) == 0 && ptr[5] == '\0') {
+                return ConfigLexer::TriggerType::TURN_START;
+            }
+            if (memcmp(ptr, "end", 3) == 0 && ptr[3] == '\0') {
+                return ConfigLexer::TriggerType::TURN_END;
+            }
         }
         return std::unexpected(ParseError::MALFORMED_STRING);
     }

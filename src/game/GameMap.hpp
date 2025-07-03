@@ -135,7 +135,8 @@ class GameMap {
             result += std::string() +
                 "Legend:\n------\n" +
                 "⬡: No floor\n" +
-                RED + "⬣" + RESET + ": A Card is in the cell\n" +
+                RED + "⬣" + RESET + ": Regular unit/card\n" +
+                BLUE + "⬣" + RESET + ": Legend unit\n" +
                 YELLOW + "⬣" + RESET + ": Spawn position for legends\n" +
                 GREEN + "⬣" + RESET + ": Walkable floor without cards.\n";
             return result;

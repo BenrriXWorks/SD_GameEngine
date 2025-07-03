@@ -3,7 +3,7 @@
 #include <print>
 #include <stdexcept>
 #include "../../libs/json.hpp"
-#include "../effects/EffectDispatch.hpp"
+#include "../effects/ComposedEffectFactory.hpp"
 
 std::vector<CardLoader::DeckConfig> CardLoader::loadDecksFromFile(const std::string& filename) {
     std::vector<DeckConfig> decks;
@@ -96,26 +96,34 @@ CardLoader::CardConfig CardLoader::parseCard(const nlohmann::json& cardJson) {
 CardLoader::EffectConfig CardLoader::parseEffect(const nlohmann::json& effectJson) {
     EffectConfig effect;
     
-    effect.type = effectJson.at("type").get<std::string>();
-    effect.target = effectJson.at("target").get<std::string>();
+    // Convertir strings a enums usando ConfigLexer
+    effect.type = ConfigLexer::parseEffectType(effectJson.at("type").get<std::string>());
+    effect.target_type = ConfigLexer::parseTargetType(effectJson.at("target_type").get<std::string>());
+    effect.filter = ConfigLexer::parseTargetFilter(effectJson.at("filter").get<std::string>());
+    effect.trigger = ConfigLexer::parseTriggerType(effectJson.at("trigger").get<std::string>());
+    effect.value = effectJson.value("value", 0);
+    effect.duration = effectJson.value("duration", 0);
     
-    // Optional fields
-    if (effectJson.contains("value")) {
-        effect.value = effectJson["value"].get<int>();
+    // Parse optional attribute for attribute modifiers
+    if (effectJson.contains("attribute")) {
+        effect.attribute = effectJson.at("attribute").get<std::string>();
     }
     
-    if (effectJson.contains("trigger")) {
-        effect.trigger = effectJson["trigger"].get<std::string>();
+    // Parse directions for adjacency effects usando ConfigLexer
+    if (effectJson.contains("directions") && effectJson["directions"].is_array()) {
+        std::vector<std::string> directionStrings;
+        for (const auto& dir : effectJson["directions"]) {
+            directionStrings.push_back(dir.get<std::string>());
+        }
+        effect.directions = ConfigLexer::parseDirections(directionStrings);
     }
     
-    if (effectJson.contains("direction")) {
-        effect.direction = effectJson["direction"].get<std::string>();
+    // Parse specific position targets
+    if (effectJson.contains("x")) {
+        effect.x = effectJson.at("x").get<uint8_t>();
     }
-    
-    if (effectJson.contains("position")) {
-        auto position = effectJson["position"];
-        effect.x = position["x"].get<uint8_t>();
-        effect.y = position["y"].get<uint8_t>();
+    if (effectJson.contains("y")) {
+        effect.y = effectJson.at("y").get<uint8_t>();
     }
     
     return effect;
@@ -189,13 +197,36 @@ std::vector<CardPtr> CardLoader::createCardsFromConfig(const DeckConfig& deckCon
 }
 
 EffectPtr CardLoader::createEffectFromConfig(const EffectConfig& config, CardPtr source, PlayerId owner) {
-    // Use the optimized trie-based dispatch system
-    auto creator = EffectDispatch::lookup(config.type);
-    
-    if (creator) {
-        return creator(config, source, owner);
-    } else {
-        std::println("Unknown effect type: {}", config.type);
-        return nullptr;
+    // Usar el nuevo sistema unificado de ComposedEffectFactory
+    try {
+        // Usar los enums directamente, con valores por defecto si es necesario
+        ConfigLexer::TriggerType triggerType = config.trigger;
+        ConfigLexer::TargetType targetType = config.target_type;
+        ConfigLexer::TargetFilter filter = config.filter;
+        
+        // Crear el efecto usando la nueva factory con enums
+        auto effect = ComposedEffectFactory::createFromConfig(
+            config.type,      // Tipo de efecto (enum)
+            triggerType,      // Tipo de trigger (enum)
+            targetType,       // Tipo de objetivo (enum)
+            source,           // Carta fuente
+            owner,            // Propietario
+            config.value,     // Valor del efecto
+            filter,           // Filtro de objetivo (enum)
+            config.directions,// Direcciones (vector de enums)
+            config.attribute, // Atributo (string)
+            config.x,         // Posición X
+            config.y          // Posición Y
+        );
+        
+        if (effect) {
+            return effect;
+        }
+    } catch (const std::exception& e) {
+        std::println("Error creating composed effect: {}", e.what());
     }
+    
+    // Si no se pudo crear el efecto compuesto, reportar error
+    std::println("Failed to create effect");
+    return nullptr;
 }

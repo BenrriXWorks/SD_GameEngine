@@ -9,6 +9,7 @@
 #include "../effects/EffectStack.hpp"
 #include "../utils/Types.hpp"
 #include "../cards/Card.hpp"
+#include "../config/GameConfig.hpp"
 
 enum class Team : uint8_t {
     NONE = 0,
@@ -30,6 +31,7 @@ struct Player {
     uint8_t health = 20;
     uint8_t actionsRemaining = 3;  // Acciones por turno
     uint8_t maxActionsPerTurn = 3; // Configurable
+    uint8_t maxHandSize = 7;       // Tamaño máximo de mano (configurable)
     
     std::vector<CardPtr> deck;
     std::vector<CardPtr> hand;
@@ -44,6 +46,7 @@ struct Player {
     // Helper methods for hand management
     size_t findCardIndex(CardPtr card) const;
     bool hasCard(CardPtr card) const;
+    bool drawCard(); // Retorna true si se pudo robar
     
     // Helper para verificar si el jugador sigue vivo (leyenda viva)
     bool isAlive() const { return legend && legend->isAlive(); }
@@ -72,6 +75,7 @@ private:
     GameMap map;
     EffectStack effectStack;
     std::vector<Player> players;
+    GameConfig gameConfig;  // Configuración del juego
     
     PlayerId currentPlayer = 0;
     uint32_t turnNumber = 0;
@@ -102,6 +106,8 @@ private:
     
 public:
     GameState();
+    GameState(const GameConfig& config);
+    GameState(std::vector<CardPtr> deck1, std::vector<CardPtr> deck2, const GameConfig& config);
     
     // Game setup
     void addPlayer(PlayerId id, Team team, const std::string& name);
@@ -164,6 +170,9 @@ public:
         }
         return direction;
     }
+    
+    // Configuration application
+    void applyConfigurationToPlayers();
 };
 
 // Serialization operators
