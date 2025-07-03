@@ -1,5 +1,149 @@
 # Documentación de Clases - SD Game Engine 2XD
 
+## Módulo API (Principal)
+
+### `GameAPI`
+**Propósito**: Interfaz principal para todas las operaciones del juego. Esta es la clase más importante ya que actúa como punto de entrada único para todas las interacciones con el motor.
+
+**Entradas Generales**:
+- Archivos de configuración (mazos JSON, configuración .conf)
+- Comandos de juego (mover carta, atacar, jugar carta, terminar turno)
+- Parámetros de inicialización del juego
+
+**Salidas Generales**:
+- Información del estado del juego (`GameInfo`)
+- Información de jugadores (`PlayerInfo`)
+- Resultados de acciones (códigos de éxito/fallo con detalles)
+
+### Métodos de Inicialización
+
+#### `initializeGameWithConfig(deckFilePath, config)`
+**Propósito**: Inicializa el juego con archivos de configuración.
+- **Parámetros**:
+  - `const std::string& deckFilePath`: Ruta al archivo JSON con mazos
+  - `const GameConfig& config`: Objeto de configuración del juego
+- **Retorna**: `bool` - true si la inicialización fue exitosa
+- **Uso**: Método principal para inicializar el motor con configuración personalizada
+
+### Métodos de Consulta de Estado
+
+#### `getGameInfo()`
+**Propósito**: Obtiene información completa del estado actual del juego.
+- **Parámetros**: Ninguno
+- **Retorna**: `GameInfo` - Estructura con toda la información del juego
+- **Contenido del GameInfo**:
+  - `turn`: Número de turno actual
+  - `currentPlayer`: ID del jugador actual
+  - `isGameOver`: Si el juego ha terminado
+  - `winner`: Ganador (si aplica)
+  - `player0`, `player1`: Información de ambos jugadores
+  - `mapCells`: Estado de todas las celdas del mapa
+
+#### `getPlayerInfo(playerId)`
+**Propósito**: Obtiene información específica de un jugador.
+- **Parámetros**:
+  - `PlayerId playerId`: ID del jugador (0 o 1)
+- **Retorna**: `PlayerInfo` - Información detallada del jugador
+- **Contenido del PlayerInfo**:
+  - `id`: ID del jugador
+  - `team`: Equipo (TEAM_A o TEAM_B)
+  - `isAlive`: Si el jugador está vivo
+  - `actionsLeft`: Acciones restantes en el turno
+  - `handSize`: Número de cartas en mano
+  - `hasLegend`: Si tiene leyenda activa
+  - `legendPosition`: Posición de la leyenda en el mapa
+
+#### `getCellInfo(x, y)`
+**Propósito**: Obtiene información de una celda específica del mapa.
+- **Parámetros**:
+  - `uint8_t x`: Coordenada X (0-4)
+  - `uint8_t y`: Coordenada Y (0-5)
+- **Retorna**: `std::optional<CellInfo>` - Información de la celda o nullopt si es inválida
+
+### Métodos de Acción de Juego
+
+#### `playCard(playerId, cardIndex, x, y)`
+**Propósito**: Juega una carta desde la mano del jugador en una posición específica.
+- **Parámetros**:
+  - `PlayerId playerId`: ID del jugador que juega la carta
+  - `size_t cardIndex`: Índice de la carta en la mano (0-6)
+  - `uint8_t x`: Coordenada X donde colocar la carta
+  - `uint8_t y`: Coordenada Y donde colocar la carta
+- **Retorna**: `ActionResult` - Resultado de la acción
+- **Validaciones**: Verifica turno, acciones disponibles, carta válida, posición legal
+
+#### `moveCard(playerId, fromX, fromY, toX, toY)`
+**Propósito**: Mueve una carta de una posición a otra en el mapa.
+- **Parámetros**:
+  - `PlayerId playerId`: ID del jugador dueño de la carta
+  - `uint8_t fromX`: Coordenada X origen
+  - `uint8_t fromY`: Coordenada Y origen
+  - `uint8_t toX`: Coordenada X destino
+  - `uint8_t toY`: Coordenada Y destino
+- **Retorna**: `ActionResult` - Resultado del movimiento
+- **Validaciones**: Verifica propiedad de carta, rango de movimiento, destino válido
+
+#### `attackCard(playerId, fromX, fromY, toX, toY)`
+**Propósito**: Realiza un ataque desde una carta hacia un objetivo.
+- **Parámetros**:
+  - `PlayerId playerId`: ID del jugador atacante
+  - `uint8_t fromX`: Coordenada X de la carta atacante
+  - `uint8_t fromY`: Coordenada Y de la carta atacante
+  - `uint8_t toX`: Coordenada X del objetivo
+  - `uint8_t toY`: Coordenada Y del objetivo
+- **Retorna**: `ActionResult` - Resultado del ataque
+- **Validaciones**: Verifica rango de ataque, objetivo válido, acciones disponibles
+
+#### `castSpell(playerId, cardIndex)`
+**Propósito**: Lanza un hechizo desde la mano del jugador.
+- **Parámetros**:
+  - `PlayerId playerId`: ID del jugador que lanza el hechizo
+  - `size_t cardIndex`: Índice del hechizo en la mano
+- **Retorna**: `ActionResult` - Resultado del lanzamiento
+- **Validaciones**: Verifica que la carta es un hechizo, acciones disponibles
+
+#### `endTurn()`
+**Propósito**: Termina el turno del jugador actual.
+- **Parámetros**: Ninguno
+- **Retorna**: `ActionResult` - Siempre SUCCESS si el juego no ha terminado
+- **Efectos**: Cambia jugador activo, resetea acciones, ejecuta efectos de fin de turno
+
+### Métodos de Consulta de Movimientos Válidos
+
+#### `getValidPlayPositions(playerId)`
+**Propósito**: Obtiene todas las posiciones válidas donde el jugador puede colocar cartas.
+- **Parámetros**:
+  - `PlayerId playerId`: ID del jugador
+- **Retorna**: `std::vector<std::pair<uint8_t, uint8_t>>` - Lista de coordenadas válidas
+
+#### `getValidMovePositions(x, y)`
+**Propósito**: Obtiene posiciones válidas donde se puede mover una carta específica.
+- **Parámetros**:
+  - `uint8_t x`: Coordenada X de la carta
+  - `uint8_t y`: Coordenada Y de la carta
+- **Retorna**: `std::vector<std::pair<uint8_t, uint8_t>>` - Destinos válidos
+
+#### `getValidAttackPositions(x, y)`
+**Propósito**: Obtiene objetivos válidos que puede atacar una carta específica.
+- **Parámetros**:
+  - `uint8_t x`: Coordenada X de la carta atacante
+  - `uint8_t y`: Coordenada Y de la carta atacante
+- **Retorna**: `std::vector<std::pair<uint8_t, uint8_t>>` - Objetivos válidos
+
+### Códigos de Resultado (`ActionResult`)
+- `SUCCESS`: Acción ejecutada exitosamente
+- `INVALID_PLAYER`: Jugador inválido o no es su turno
+- `INVALID_POSITION`: Posición fuera del mapa o inválida
+- `INVALID_CARD`: Carta no existe o no válida para la acción
+- `NOT_ENOUGH_ACTIONS`: Sin acciones restantes en el turno
+- `POSITION_OCCUPIED`: Destino ocupado por otra carta
+- `CANNOT_ATTACK_TARGET`: Objetivo no válido para ataque
+- `OUT_OF_RANGE`: Acción fuera del rango permitido
+- `GAME_OVER`: El juego ha terminado
+- `INVALID_MOVE`: Movimiento no permitido
+
+---
+
 ## Arquitectura General
 
 El motor está organizado en varios módulos principales que manejan diferentes aspectos del juego:
@@ -10,32 +154,6 @@ El motor está organizado en varios módulos principales que manejan diferentes 
 - **Juego**: Estado del juego, mapa y mecánicas core
 - **Targeting**: Sistema de selección de objetivos
 - **Configuración**: Manejo de parámetros del juego
-
----
-
-## Módulo API
-
-### `GameAPI`
-**Propósito**: Interfaz principal para todas las operaciones del juego.
-
-**Entradas**:
-- Archivos de configuración (mazos, config)
-- Comandos de juego (mover carta, atacar, jugar carta, terminar turno)
-- Parámetros de inicialización
-
-**Salidas**:
-- Información del estado del juego (`GameInfo`)
-- Información de jugadores (`PlayerInfo`)
-- Resultados de acciones (éxito/fallo con detalles)
-
-**Métodos Principales**:
-- `initializeGameWithConfig()`: Inicializa el juego con archivos de configuración
-- `getGameInfo()`: Obtiene el estado actual del juego
-- `getPlayerInfo()`: Obtiene información de un jugador específico
-- `playCard()`: Juega una carta desde la mano
-- `moveCard()`: Mueve una carta en el mapa
-- `attackCard()`: Realiza un ataque entre cartas
-- `endTurn()`: Termina el turno actual
 
 ---
 
